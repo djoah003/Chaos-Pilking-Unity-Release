@@ -1,0 +1,83 @@
+using System.Collections;
+using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEngine;
+using UnityEngine.Serialization;
+
+public class PlayerMovement : MonoBehaviour
+{
+    [SerializeField] private Rigidbody playerRb;
+    [SerializeField] private float movementSpeed = 5.0f; [SerializeField] private float rotationSpeed = 5.0f;
+    [SerializeField] private Transform camera;
+    [SerializeField] private float timer;
+    public bool _isFalling, _isGettingUp;
+    private float rotationZ, rotationX;
+
+    private Coroutine fallTimerCoroutine;
+    // Start is called before the first frame update
+    void Start()
+    {
+        playerRb = gameObject.GetComponent<Rigidbody>();
+        camera = Camera.main.transform;
+    }
+
+    private IEnumerator FallTimer()
+    {
+        _isFalling = true;
+        yield return new WaitForSeconds(5);
+        // When timer reaches 5 seconds do everything under
+        
+        Debug.Log("AYYYYYY");
+        _isGettingUp = true;
+        _isFalling = false;
+    }
+    
+    // Update is called once per frame
+    void Update()
+    {
+        float verticalInput = Input.GetAxis("Vertical");
+        float horizontalInput = Input.GetAxis("Horizontal");
+        
+        rotationZ = (transform.rotation.eulerAngles.z + 180) % 360 - 180;
+        rotationX = (transform.rotation.eulerAngles.x + 180) % 360 - 180;
+        
+        // Player rotation
+        float targetYRotation = camera.eulerAngles.y;
+        Quaternion targetRotation = Quaternion.Euler(transform.rotation.eulerAngles.x, targetYRotation, transform.rotation.eulerAngles.z);
+        
+        if(_isGettingUp)
+        {
+            if (rotationX is > 0f or < 0f || rotationZ is > 0f or < 0f)
+            {
+                
+            }    
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, targetYRotation, 0), 10 * Time.deltaTime);
+        } 
+        //Player movement
+        if (rotationX is > 15f or < -15f || rotationZ is > 15f or < -15f) // Is falling (Help me god)
+        {
+
+            if (playerRb.velocity.magnitude < 0.1f && !_isGettingUp)
+            {
+                if (!_isFalling)
+                    fallTimerCoroutine = StartCoroutine(FallTimer());
+            }
+
+            else if (_isGettingUp)
+            {
+                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, targetYRotation, 0), 10 * Time.deltaTime);
+                
+            }
+        }
+        
+        else
+        {
+            _isGettingUp = false;
+            
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            
+            Vector3 movement = new Vector3(horizontalInput, 0.0f, verticalInput).normalized;
+            transform.Translate(movement * (movementSpeed * Time.deltaTime), Space.Self);
+        }
+    }
+}
